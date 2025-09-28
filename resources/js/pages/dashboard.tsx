@@ -1,8 +1,13 @@
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+
+import DashboardHabitsPanel from '@/components/dashboard/dashboard-habits-panel';
+import DashboardHeader from '@/components/dashboard/dashboard-header';
+import DashboardQuickActionsPanel from '@/components/dashboard/dashboard-quick-actions-panel';
+import DashboardQuickViewPanel from '@/components/dashboard/dashboard-quick-view-panel';
+import DashboardTasksPanel from '@/components/dashboard/dashboard-tasks-panel';
+import DashboardUpcomingEventsPanel from '@/components/dashboard/dashboard-upcoming-events-panel';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -13,23 +18,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Dashboard() {
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
+        <AppLayout>
+            <div className="h-full w-full bg-[var(--background-white)] px-6 py-4">
+                <DashboardHeader />
+                <DashboardQuickViewPanel />
+                <div className="flex w-full flex-wrap items-stretch justify-between gap-4">
+                    <DashboardTasksPanel />
+                    <DashboardHabitsPanel />
                 </div>
-                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                </div>
+                <DashboardUpcomingEventsPanel />
+                <DashboardQuickActionsPanel />
             </div>
         </AppLayout>
     );
