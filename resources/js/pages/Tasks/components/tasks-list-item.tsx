@@ -1,14 +1,16 @@
 import { Checkbox } from '@/components/ui/checkbox';
+import { format } from 'date-fns';
 import { CircleSmall, Pencil, Trash2 } from 'lucide-react';
 
 type Props = {
     task: {
-        taskName: string;
-        taskDetails: string;
-        taskPriority: string;
-        taskSpace: string;
-        taskDueDate: string;
-        taskTags: string[];
+        id: number;
+        name: string;
+        details: string;
+        priority: string;
+        space: string;
+        due_date: string;
+        tags: string[];
     };
 };
 
@@ -33,28 +35,28 @@ const TasksListItem = ({ task }: Props) => {
             <Checkbox className="data-[state=checked]:border-[var(--green-5)] data-[state=checked]:bg-[var(--green-5)]" />
             <div className="flex-1 space-y-2">
                 <p className="text-lg font-semibold text-gray-800">
-                    {task.taskName}
+                    {task.name}
                 </p>
-                <p className="text-sm text-gray-600">{task.taskDetails}</p>
+                <p className="text-sm text-gray-600">{task.details}</p>
                 <div className="flex items-center justify-start gap-4">
                     <p
-                        className={`text-xs ${getTextColor(task.taskPriority)} ${getBackgroundColor(task.taskPriority)} rounded-2xl px-3 py-1 font-semibold`}
+                        className={`text-xs ${getTextColor(task.priority)} ${getBackgroundColor(task.priority)} rounded-2xl px-3 py-1 font-semibold`}
                     >
-                        {task.taskPriority}
+                        {task.priority}
                     </p>
-                    <div className="flex items-center justify-start">
+                    <div className="flex items-center justify-start gap-1">
                         <CircleSmall className="h-2 w-2 rounded-full bg-[var(--purple-3)] text-[var(--purple-3)]" />
-                        <p className="text-sm text-gray-500">
-                            {task.taskSpace}
+                        <p className="text-sm text-gray-500 capitalize">
+                            {task.space}
                         </p>
                     </div>
                     <p className="text-sm text-gray-500">
-                        Due: {task.taskDueDate}
+                        Due: {format(new Date(task.due_date), 'dd-MM-yyyy')}
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-start gap-1">
-                    {task.taskTags &&
-                        task.taskTags.map((tag, index) => (
+                    {task.tags &&
+                        task.tags.map((tag, index) => (
                             <div
                                 key={index}
                                 className="w-max rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-800"

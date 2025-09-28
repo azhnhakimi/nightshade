@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { usePage } from '@inertiajs/react';
 import {
     getCoreRowModel,
     getFilteredRowModel,
@@ -12,76 +13,144 @@ import * as React from 'react';
 import TasksListItem from './tasks-list-item';
 
 type Task = {
-    taskName: string;
-    taskDetails: string;
-    taskPriority: string;
-    taskSpace: string;
-    taskDueDate: string;
-    taskTags: string[];
+    id: number;
+    name: string;
+    details: string;
+    priority: string;
+    space: string;
+    due_date: string;
+    tags: string[];
 };
 
-const data: Task[] = [
-    {
-        taskName: 'Update project documentation',
-        taskDetails: 'Document new API endpoints and update README',
-        taskPriority: 'medium',
-        taskSpace: 'Work',
-        taskDueDate: '12/01/2025',
-        taskTags: ['documentation', 'development'],
-    },
-    {
-        taskName: 'Read 30 pages of current book',
-        taskDetails: 'Continue reading "Atomic Habits" by James Clear',
-        taskPriority: 'low',
-        taskSpace: 'Personal',
-        taskDueDate: '11/01/2025',
-        taskTags: ['reading', 'self-improvement'],
-    },
-];
+type GlobalFilter = {
+    search: string;
+    priority?: string;
+    space?: string;
+};
 
 export default function TasksListDisplay() {
     const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list');
-    const [globalFilter, setGlobalFilter] = React.useState('');
+    const [globalFilter, setGlobalFilter] = React.useState<GlobalFilter>({
+        search: '',
+        priority: undefined,
+        space: undefined,
+    });
+    const [priorityFilter, setPriorityFilter] = React.useState<
+        string | undefined
+    >(undefined);
+    const [spaceFilter, setSpaceFilter] = React.useState<string | undefined>(
+        undefined,
+    );
 
-    // columns aren’t really needed since you’re not rendering a table
-    // but we need the table instance for search/filter state
+    const { tasks } = usePage().props as unknown as { tasks: any[] };
+
+    const columns = React.useMemo(
+        () => [
+            {
+                accessorKey: 'name',
+            },
+            {
+                accessorKey: 'details',
+            },
+            {
+                accessorKey: 'tags',
+                // flatten tags for filtering
+                accessorFn: (row: Task) => row.tags.join(' '),
+            },
+        ],
+        [],
+    );
+
     const table = useReactTable({
-        data,
-        columns: [], // we don’t render real columns
-        state: {
-            globalFilter,
-        },
+        data: tasks,
+        columns,
+        state: { globalFilter },
         onGlobalFilterChange: setGlobalFilter,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
-        globalFilterFn: (row, columnId, filterValue) => {
+        globalFilterFn: (row, columnId, filter: GlobalFilter) => {
             const task: Task = row.original;
-            return (
-                task.taskName
-                    .toLowerCase()
-                    .includes(filterValue.toLowerCase()) ||
-                task.taskDetails
-                    .toLowerCase()
-                    .includes(filterValue.toLowerCase()) ||
-                task.taskTags.some((tag) =>
-                    tag.toLowerCase().includes(filterValue.toLowerCase()),
-                )
-            );
+            const search = (filter.search ?? '').toLowerCase();
+
+            const name = (task.name ?? '').toLowerCase();
+            const details = (task.details ?? '').toLowerCase();
+            const tags = task.tags?.map((t) => (t ?? '').toLowerCase()) ?? [];
+
+            const matchesSearch =
+                name.includes(search) ||
+                details.includes(search) ||
+                tags.some((tag) => tag.includes(search));
+
+            const matchesPriority =
+                !filter.priority ||
+                task.priority.toLowerCase() === filter.priority.toLowerCase();
+
+            const matchesSpace =
+                !filter.space ||
+                task.space.toLowerCase() === filter.space.toLowerCase();
+
+            return matchesSearch && matchesPriority && matchesSpace;
         },
     });
 
     const rows = table.getRowModel().rows;
+    console.log(
+        'Rows after filter:',
+        rows.map((r) => r.original),
+    );
 
     return (
         <div className="my-4 w-full rounded-lg border-2 border-gray-100 bg-white px-4 py-6 shadow-[0_2px_2px_rgba(0,0,0,0.15)]">
-            {/* Controls */}
             <div className="mb-4 flex items-center justify-between gap-2">
                 <Input
                     placeholder="Search tasks..."
-                    value={globalFilter ?? ''}
-                    onChange={(e) => setGlobalFilter(e.target.value)}
-                    className="max-w-sm"
+                    value={globalFilter.search}
+                    onChange={(e) =>
+                        setGlobalFilter((prev) => ({
+                            ...prev,
+                            search: e.target.value,
+                        }))
+                    }
+                    className="max-w-2xl"
                 />
+                <div className="flex w-fit gap-2">
+                    {['low', 'medium', 'high'].map((p) => (
+                        <Button
+                            key={p}
+                            variant={
+                                globalFilter.priority === p
+                                    ? 'default'
+                                    : 'outline'
+                            }
+                            onClick={() =>
+                                setGlobalFilter((prev) => ({
+                                    ...prev,
+                                    priority:
+                                        prev.priority === p ? undefined : p,
+                                }))
+                            }
+                            className="flex-1"
+                        >
+                            {p[0].toUpperCase() + p.slice(1)}
+                        </Button>
+                    ))}
+                </div>
+
+                {/* Space dropdown stays the same */}
+                <select
+                    value={globalFilter.space ?? ''}
+                    onChange={(e) =>
+                        setGlobalFilter((prev) => ({
+                            ...prev,
+                            space: e.target.value || undefined,
+                        }))
+                    }
+                >
+                    <option value="">All spaces</option>
+                    <option value="work">Work</option>
+                    <option value="fitness">Fitness</option>
+                    <option value="personal">Personal</option>
+                </select>
                 <div className="flex items-center gap-2">
                     <Button
                         variant={viewMode === 'list' ? 'default' : 'outline'}
@@ -100,13 +169,12 @@ export default function TasksListDisplay() {
                 </div>
             </div>
 
-            {/* Render tasks */}
             {viewMode === 'list' ? (
                 <div>
                     {rows.map((row, index) => {
                         const task = row.original as Task;
                         return (
-                            <div key={task.taskName}>
+                            <div key={task.id}>
                                 <TasksListItem task={task} />
                                 {index !== rows.length - 1 && (
                                     <Separator className="my-4" />
@@ -121,7 +189,7 @@ export default function TasksListDisplay() {
                         const task = row.original as Task;
                         return (
                             <div
-                                key={task.taskName}
+                                key={task.name}
                                 className="rounded-lg border border-gray-200 p-4 shadow-sm"
                             >
                                 <TasksListItem task={task} />

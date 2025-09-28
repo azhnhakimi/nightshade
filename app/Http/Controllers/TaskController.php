@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Task;
 
 class TaskController extends Controller
 {
@@ -12,7 +13,11 @@ class TaskController extends Controller
      */
     public function index()
     {
-        return Inertia::render('Tasks/Index');
+        $tasks = Task::latest()->get(); 
+
+        return Inertia::render('Tasks/Index', [
+            'tasks' => $tasks,
+        ]);
     }
 
     /**
@@ -28,7 +33,19 @@ class TaskController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'details' => 'nullable|string',
+            'priority' => 'required|in:low,medium,high',
+            'space' => 'required|in:work,fitness,personal',
+            'due_date' => 'nullable|date',
+            'tags' => 'array',
+            'tags.*' => 'string|max:50',
+        ]);
+
+        Task::create($validated);
+
+        return redirect()->back()->with('success', 'Task created successfully!');
     }
 
     /**
