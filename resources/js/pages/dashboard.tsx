@@ -1,6 +1,4 @@
 import AppLayout from '@/layouts/app-layout';
-import { dashboard } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
 
 import DashboardHabitsPanel from '@/components/dashboard/dashboard-habits-panel';
 import DashboardHeader from '@/components/dashboard/dashboard-header';
@@ -8,13 +6,6 @@ import DashboardQuickActionsPanel from '@/components/dashboard/dashboard-quick-a
 import DashboardQuickViewPanel from '@/components/dashboard/dashboard-quick-view-panel';
 import DashboardTasksPanel from '@/components/dashboard/dashboard-tasks-panel';
 import DashboardUpcomingEventsPanel from '@/components/dashboard/dashboard-upcoming-events-panel';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard().url,
-    },
-];
 
 export default function Dashboard() {
     return (

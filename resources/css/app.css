@@ -117,10 +117,15 @@
     --yellow-3: #ca8a46;
     --yellow-4: #fefce8;
 
+    --blue-1: #403a8a;
+    --blue-2: #1d6be3;
+    --blue-3: #eff6ff;
+
     --red-1: #dc2933;
     --red-2: #fef2f2;
 
     --orange-1: #f9733c;
+    --orange-2: #ffedd5;
 }
 
 .dark {
