@@ -58,6 +58,7 @@ const TaskSheet = ({ setOpen }: TaskSheetProps) => {
         post('/tasks', {
             onSuccess: () => {
                 reset();
+                setDate(undefined);
                 setOpen(false);
             },
         });

@@ -1,7 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import {
     getCoreRowModel,
     getFilteredRowModel,
@@ -9,6 +16,7 @@ import {
 } from '@tanstack/react-table';
 import { Grid, Rows } from 'lucide-react';
 import * as React from 'react';
+import { toast } from 'sonner';
 
 import TasksListItem from './tasks-list-item';
 
@@ -28,6 +36,14 @@ type GlobalFilter = {
     space?: string;
 };
 
+type PageProps = {
+    tasks: Task[];
+    flash?: {
+        success?: string;
+        error?: string;
+    };
+};
+
 export default function TasksListDisplay() {
     const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list');
     const [globalFilter, setGlobalFilter] = React.useState<GlobalFilter>({
@@ -35,14 +51,26 @@ export default function TasksListDisplay() {
         priority: undefined,
         space: undefined,
     });
-    const [priorityFilter, setPriorityFilter] = React.useState<
-        string | undefined
-    >(undefined);
-    const [spaceFilter, setSpaceFilter] = React.useState<string | undefined>(
-        undefined,
-    );
 
-    const { tasks } = usePage().props as unknown as { tasks: any[] };
+    const { tasks, flash } = usePage().props as unknown as PageProps;
+
+    React.useEffect(() => {
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
+    }, [flash]);
+
+    const handleDeleteTask = (taskId: number, closeModal: () => void) => {
+        router.delete(`/tasks/${taskId}`, {
+            onSuccess: () => {
+                closeModal();
+            },
+            onError: (errors: any) => {
+                toast.error(
+                    `Error performing task deletion: ${errors.message || errors}`,
+                );
+            },
+        });
+    };
 
     const columns = React.useMemo(
         () => [
@@ -94,14 +122,10 @@ export default function TasksListDisplay() {
     });
 
     const rows = table.getRowModel().rows;
-    console.log(
-        'Rows after filter:',
-        rows.map((r) => r.original),
-    );
 
     return (
         <div className="my-4 w-full rounded-lg border-2 border-gray-100 bg-white px-4 py-6 shadow-[0_2px_2px_rgba(0,0,0,0.15)]">
-            <div className="mb-4 flex items-center justify-between gap-2">
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-2">
                 <Input
                     placeholder="Search tasks..."
                     value={globalFilter.search}
@@ -129,33 +153,37 @@ export default function TasksListDisplay() {
                                         prev.priority === p ? undefined : p,
                                 }))
                             }
-                            className="flex-1"
+                            className="flex-1 hover:cursor-pointer"
                         >
                             {p[0].toUpperCase() + p.slice(1)}
                         </Button>
                     ))}
                 </div>
-
-                {/* Space dropdown stays the same */}
-                <select
-                    value={globalFilter.space ?? ''}
-                    onChange={(e) =>
+                <Select
+                    value={globalFilter.space ?? 'all'}
+                    onValueChange={(value) =>
                         setGlobalFilter((prev) => ({
                             ...prev,
-                            space: e.target.value || undefined,
+                            space: value === 'all' ? undefined : value,
                         }))
                     }
                 >
-                    <option value="">All spaces</option>
-                    <option value="work">Work</option>
-                    <option value="fitness">Fitness</option>
-                    <option value="personal">Personal</option>
-                </select>
+                    <SelectTrigger className="max-w-[150px]">
+                        <SelectValue placeholder="Select space" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All spaces</SelectItem>
+                        <SelectItem value="work">Work</SelectItem>
+                        <SelectItem value="fitness">Fitness</SelectItem>
+                        <SelectItem value="personal">Personal</SelectItem>
+                    </SelectContent>
+                </Select>
                 <div className="flex items-center gap-2">
                     <Button
                         variant={viewMode === 'list' ? 'default' : 'outline'}
                         size="icon"
                         onClick={() => setViewMode('list')}
+                        className="hover:cursor-pointer"
                     >
                         <Rows className="h-4 w-4" />
                     </Button>
@@ -163,6 +191,7 @@ export default function TasksListDisplay() {
                         variant={viewMode === 'grid' ? 'default' : 'outline'}
                         size="icon"
                         onClick={() => setViewMode('grid')}
+                        className="hover:cursor-pointer"
                     >
                         <Grid className="h-4 w-4" />
                     </Button>
@@ -175,7 +204,11 @@ export default function TasksListDisplay() {
                         const task = row.original as Task;
                         return (
                             <div key={task.id}>
-                                <TasksListItem task={task} />
+                                <TasksListItem
+                                    key={task.id}
+                                    task={task}
+                                    onDelete={handleDeleteTask}
+                                />
                                 {index !== rows.length - 1 && (
                                     <Separator className="my-4" />
                                 )}
@@ -192,7 +225,11 @@ export default function TasksListDisplay() {
                                 key={task.name}
                                 className="rounded-lg border border-gray-200 p-4 shadow-sm"
                             >
-                                <TasksListItem task={task} />
+                                <TasksListItem
+                                    key={task.id}
+                                    task={task}
+                                    onDelete={handleDeleteTask}
+                                />
                             </div>
                         );
                     })}

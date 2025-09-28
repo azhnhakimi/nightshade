@@ -1,6 +1,17 @@
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { CircleSmall, Pencil, Trash2 } from 'lucide-react';
+import * as React from 'react';
 
 type Props = {
     task: {
@@ -12,6 +23,7 @@ type Props = {
         due_date: string;
         tags: string[];
     };
+    onDelete?: (taskId: number, closeModal: () => void) => void;
 };
 
 const textColorMap: Record<string, string> = {
@@ -29,7 +41,13 @@ const bgColorMap: Record<string, string> = {
 const getTextColor = (priority: string): string => textColorMap[priority];
 const getBackgroundColor = (priority: string): string => bgColorMap[priority];
 
-const TasksListItem = ({ task }: Props) => {
+const TasksListItem = ({ task, onDelete }: Props) => {
+    const [open, setOpen] = React.useState(false);
+
+    const handleDelete = () => {
+        if (onDelete) onDelete(task.id, () => setOpen(false));
+    };
+
     return (
         <div className="flex items-center justify-start gap-4">
             <Checkbox className="data-[state=checked]:border-[var(--green-5)] data-[state=checked]:bg-[var(--green-5)]" />
@@ -68,7 +86,37 @@ const TasksListItem = ({ task }: Props) => {
             </div>
             <div className="flex items-center justify-center gap-4 self-start">
                 <Pencil className="h-4 w-4 text-gray-500 transition duration-200 hover:cursor-pointer hover:text-[var(--blue-2)]" />
-                <Trash2 className="h-4 w-4 text-gray-500 transition duration-200 hover:cursor-pointer hover:text-[var(--red-1)]" />
+                <Dialog open={open} onOpenChange={setOpen}>
+                    <DialogTrigger asChild>
+                        <Trash2 className="h-4 w-4 text-gray-500 transition duration-200 hover:cursor-pointer hover:text-[var(--red-1)]" />
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Delete Task</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to delete{' '}
+                                <b>{task.name}</b>? This action cannot be
+                                undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="flex justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setOpen(false)}
+                                className="hover:cursor-pointer"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={handleDelete}
+                                className="hover:cursor-pointer"
+                            >
+                                Delete
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     );
