@@ -28,11 +28,12 @@ type Task = {
     space: string;
     due_date: string;
     tags: string[];
+    status: 'ongoing' | 'completed';
 };
 
 type GlobalFilter = {
     search: string;
-    priority?: string;
+    status?: 'ongoing' | 'completed';
     space?: string;
 };
 
@@ -48,7 +49,7 @@ export default function TasksListDisplay() {
     const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list');
     const [globalFilter, setGlobalFilter] = React.useState<GlobalFilter>({
         search: '',
-        priority: undefined,
+        status: undefined,
         space: undefined,
     });
 
@@ -82,7 +83,6 @@ export default function TasksListDisplay() {
             },
             {
                 accessorKey: 'tags',
-                // flatten tags for filtering
                 accessorFn: (row: Task) => row.tags.join(' '),
             },
         ],
@@ -109,15 +109,14 @@ export default function TasksListDisplay() {
                 details.includes(search) ||
                 tags.some((tag) => tag.includes(search));
 
-            const matchesPriority =
-                !filter.priority ||
-                task.priority.toLowerCase() === filter.priority.toLowerCase();
+            const matchesStatus =
+                !filter.status || task.status.toLowerCase() === filter.status;
 
             const matchesSpace =
                 !filter.space ||
                 task.space.toLowerCase() === filter.space.toLowerCase();
 
-            return matchesSearch && matchesPriority && matchesSpace;
+            return matchesSearch && matchesStatus && matchesSpace;
         },
     });
 
@@ -126,6 +125,7 @@ export default function TasksListDisplay() {
     return (
         <div className="my-4 w-full rounded-lg border-2 border-gray-100 bg-white px-4 py-6 shadow-[0_2px_2px_rgba(0,0,0,0.15)]">
             <div className="mb-8 flex flex-wrap items-center justify-between gap-2">
+                {/* Search box */}
                 <Input
                     placeholder="Search tasks..."
                     value={globalFilter.search}
@@ -137,28 +137,34 @@ export default function TasksListDisplay() {
                     }
                     className="max-w-2xl"
                 />
+
+                {/* Status filter buttons */}
                 <div className="flex w-fit gap-2">
-                    {['low', 'medium', 'high'].map((p) => (
+                    {['all', 'ongoing', 'completed'].map((s) => (
                         <Button
-                            key={p}
+                            key={s}
                             variant={
-                                globalFilter.priority === p
+                                (globalFilter.status ?? 'all') === s
                                     ? 'default'
                                     : 'outline'
                             }
                             onClick={() =>
                                 setGlobalFilter((prev) => ({
                                     ...prev,
-                                    priority:
-                                        prev.priority === p ? undefined : p,
+                                    status:
+                                        s === 'all'
+                                            ? undefined
+                                            : (s as 'ongoing' | 'completed'),
                                 }))
                             }
                             className="flex-1 hover:cursor-pointer"
                         >
-                            {p[0].toUpperCase() + p.slice(1)}
+                            {s[0].toUpperCase() + s.slice(1)}
                         </Button>
                     ))}
                 </div>
+
+                {/* Space filter */}
                 <Select
                     value={globalFilter.space ?? 'all'}
                     onValueChange={(value) =>
@@ -178,6 +184,8 @@ export default function TasksListDisplay() {
                         <SelectItem value="personal">Personal</SelectItem>
                     </SelectContent>
                 </Select>
+
+                {/* View mode toggle */}
                 <div className="flex items-center gap-2">
                     <Button
                         variant={viewMode === 'list' ? 'default' : 'outline'}
@@ -198,6 +206,7 @@ export default function TasksListDisplay() {
                 </div>
             </div>
 
+            {/* Tasks list/grid */}
             {viewMode === 'list' ? (
                 <div>
                     {rows.map((row, index) => {
@@ -222,7 +231,7 @@ export default function TasksListDisplay() {
                         const task = row.original as Task;
                         return (
                             <div
-                                key={task.name}
+                                key={task.id}
                                 className="rounded-lg border border-gray-200 p-4 shadow-sm"
                             >
                                 <TasksListItem

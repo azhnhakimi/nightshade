@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -9,9 +8,14 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { Sheet, SheetTrigger } from '@/components/ui/sheet';
+import { useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { CircleSmall, Pencil, Trash2 } from 'lucide-react';
 import * as React from 'react';
+import { route } from 'ziggy-js';
+
+import TaskSheet from './task-sheet';
 
 type Props = {
     task: {
@@ -22,6 +26,7 @@ type Props = {
         space: string;
         due_date: string;
         tags: string[];
+        status: 'ongoing' | 'completed';
     };
     onDelete?: (taskId: number, closeModal: () => void) => void;
 };
@@ -42,17 +47,30 @@ const getTextColor = (priority: string): string => textColorMap[priority];
 const getBackgroundColor = (priority: string): string => bgColorMap[priority];
 
 const TasksListItem = ({ task, onDelete }: Props) => {
-    const [open, setOpen] = React.useState(false);
+    const { patch } = useForm();
+    const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+    const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
     const handleDelete = () => {
-        if (onDelete) onDelete(task.id, () => setOpen(false));
+        if (onDelete) onDelete(task.id, () => setIsSheetOpen(false));
+    };
+
+    const toggleStatus = () => {
+        console.log(
+            'Generated URL:',
+            route('tasks.toggle-status', { task: task.id }),
+        );
+        patch(route('tasks.toggle-status', { task: task.id }));
     };
 
     return (
         <div className="flex items-center justify-start gap-4">
-            <Checkbox className="data-[state=checked]:border-[var(--green-5)] data-[state=checked]:bg-[var(--green-5)]" />
             <div className="flex-1 space-y-2">
-                <p className="text-lg font-semibold text-gray-800">
+                <p
+                    className={`text-lg font-semibold text-gray-800 ${
+                        task.status === 'completed' ? 'line-through' : ''
+                    }`}
+                >
                     {task.name}
                 </p>
                 <p className="text-sm text-gray-600">{task.details}</p>
@@ -68,9 +86,11 @@ const TasksListItem = ({ task, onDelete }: Props) => {
                             {task.space}
                         </p>
                     </div>
-                    <p className="text-sm text-gray-500">
-                        Due: {format(new Date(task.due_date), 'dd-MM-yyyy')}
-                    </p>
+                    {task.due_date && (
+                        <p className="text-sm text-gray-500">
+                            Due: {format(new Date(task.due_date), 'dd-MM-yyyy')}
+                        </p>
+                    )}
                 </div>
                 <div className="flex flex-wrap items-center justify-start gap-1">
                     {task.tags &&
@@ -85,8 +105,17 @@ const TasksListItem = ({ task, onDelete }: Props) => {
                 </div>
             </div>
             <div className="flex items-center justify-center gap-4 self-start">
-                <Pencil className="h-4 w-4 text-gray-500 transition duration-200 hover:cursor-pointer hover:text-[var(--blue-2)]" />
-                <Dialog open={open} onOpenChange={setOpen}>
+                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                    <SheetTrigger asChild>
+                        <Pencil className="h-4 w-4 text-gray-500 hover:cursor-pointer hover:text-[var(--blue-2)]" />
+                    </SheetTrigger>
+                    <TaskSheet
+                        setOpen={setIsSheetOpen}
+                        task={task}
+                        mode="edit"
+                    />
+                </Sheet>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
                         <Trash2 className="h-4 w-4 text-gray-500 transition duration-200 hover:cursor-pointer hover:text-[var(--red-1)]" />
                     </DialogTrigger>
@@ -102,7 +131,7 @@ const TasksListItem = ({ task, onDelete }: Props) => {
                         <DialogFooter className="flex justify-end gap-2">
                             <Button
                                 variant="outline"
-                                onClick={() => setOpen(false)}
+                                onClick={() => setIsDialogOpen(false)}
                                 className="hover:cursor-pointer"
                             >
                                 Cancel

@@ -13,6 +13,7 @@ class Task extends Model
         'space',
         'due_date',
         'tags',
+        'status',
     ];
 
     protected $casts = [

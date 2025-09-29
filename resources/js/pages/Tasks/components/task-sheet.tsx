@@ -21,23 +21,38 @@ import { Textarea } from '@/components/ui/textarea';
 import { useForm } from '@inertiajs/react';
 import { X } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 type TaskSheetProps = {
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    task?: {
+        id: number;
+        name: string;
+        details: string;
+        priority: string;
+        space: string;
+        due_date: string;
+        tags: string[];
+        status: 'ongoing' | 'completed';
+    };
+    mode?: 'create' | 'edit';
 };
 
-const TaskSheet = ({ setOpen }: TaskSheetProps) => {
-    const { data, setData, post, processing, reset, errors } = useForm({
-        name: '',
-        details: '',
-        priority: '',
-        space: '',
-        due_date: '',
-        tags: [] as string[],
+const TaskSheet = ({ setOpen, task, mode = 'create' }: TaskSheetProps) => {
+    const { data, setData, post, put, processing, reset, errors } = useForm({
+        name: task?.name ?? '',
+        details: task?.details ?? '',
+        priority: task?.priority ?? '',
+        space: task?.space ?? '',
+        due_date: task?.due_date ?? '',
+        tags: task?.tags ?? [],
+        status: task?.status ?? '',
     });
 
     const [tagInput, setTagInput] = React.useState('');
-    const [date, setDate] = React.useState<Date>();
+    const [date, setDate] = React.useState<Date | undefined>(
+        task?.due_date ? new Date(task.due_date) : undefined,
+    );
 
     const handleAddTag = () => {
         if (tagInput.trim() !== '' && !data.tags.includes(tagInput.trim())) {
@@ -55,22 +70,48 @@ const TaskSheet = ({ setOpen }: TaskSheetProps) => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/tasks', {
-            onSuccess: () => {
-                reset();
-                setDate(undefined);
-                setOpen(false);
-            },
-        });
+
+        if (!data.name.trim()) {
+            toast.error('Task name is required');
+            return;
+        }
+        if (!data.priority) {
+            toast.error('Task priority is required');
+            return;
+        }
+        if (!data.space) {
+            toast.error('Task space is required');
+            return;
+        }
+
+        if (mode === 'create') {
+            post('/tasks', {
+                onSuccess: () => {
+                    reset();
+                    setDate(undefined);
+                    setOpen(false);
+                },
+            });
+        } else if (mode === 'edit' && task) {
+            put(`/tasks/${task.id}`, {
+                onSuccess: () => {
+                    setOpen(false);
+                },
+            });
+        }
     };
 
     return (
         <SheetContent className="overflow-y-auto">
             <form onSubmit={handleSubmit}>
                 <SheetHeader>
-                    <SheetTitle>Add New Task</SheetTitle>
+                    <SheetTitle>
+                        {mode === 'create' ? 'Add New Task' : 'Edit Task'}
+                    </SheetTitle>
                     <SheetDescription>
-                        Fill in details to create a new task.
+                        {mode === 'create'
+                            ? 'Fill in details to create a new task.'
+                            : 'Update the task details below.'}
                     </SheetDescription>
                 </SheetHeader>
                 <div className="grid flex-1 auto-rows-min gap-6 px-4">
@@ -81,6 +122,7 @@ const TaskSheet = ({ setOpen }: TaskSheetProps) => {
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
                             placeholder="Enter task name..."
+                            autoComplete="off"
                         />
                         {errors.name && (
                             <span className="text-sm text-red-500">
@@ -123,6 +165,33 @@ const TaskSheet = ({ setOpen }: TaskSheetProps) => {
                             </span>
                         )}
                     </div>
+                    {mode === 'edit' ? (
+                        <div className="grid gap-2">
+                            <Label>Task status</Label>
+                            <Select
+                                value={data.status}
+                                onValueChange={(val) => setData('status', val)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ongoing">
+                                        Ongoing
+                                    </SelectItem>
+                                    <SelectItem value="completed">
+                                        Completed
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {errors.status && (
+                                <span className="text-sm text-red-500">
+                                    {errors.status}
+                                </span>
+                            )}
+                        </div>
+                    ) : null}
+
                     <div className="grid gap-2">
                         <Label>Task space</Label>
                         <Select
@@ -187,8 +256,13 @@ const TaskSheet = ({ setOpen }: TaskSheetProps) => {
                                         handleAddTag();
                                     }
                                 }}
+                                autoComplete="off"
                             />
-                            <Button type="button" onClick={handleAddTag}>
+                            <Button
+                                type="button"
+                                onClick={handleAddTag}
+                                className="hover:cursor-pointer"
+                            >
                                 Add
                             </Button>
                         </div>
@@ -217,11 +291,26 @@ const TaskSheet = ({ setOpen }: TaskSheetProps) => {
                     </div>
                 </div>
                 <SheetFooter>
-                    <Button type="submit" disabled={processing}>
-                        {processing ? 'Creating...' : 'Create task'}
+                    <Button
+                        type="submit"
+                        disabled={processing}
+                        className="hover:cursor-pointer"
+                    >
+                        {processing
+                            ? mode === 'create'
+                                ? 'Creating...'
+                                : 'Saving...'
+                            : mode === 'create'
+                              ? 'Create task'
+                              : 'Save changes'}
                     </Button>
                     <SheetClose asChild>
-                        <Button variant="outline">Close</Button>
+                        <Button
+                            variant="outline"
+                            className="hover:cursor-pointer"
+                        >
+                            Close
+                        </Button>
                     </SheetClose>
                 </SheetFooter>
             </form>

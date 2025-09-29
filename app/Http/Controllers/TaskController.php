@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Task;
+use Carbon\Carbon;
 
 class TaskController extends Controller
 {
@@ -13,12 +14,33 @@ class TaskController extends Controller
      */
     public function index()
     {
-        $tasks = Task::latest()->get(); 
+        $tasks = Task::latest()->get();
+
+        $now = Carbon::now();
+
+        $totalTasks = Task::count();
+
+        $completedTasks = Task::where('status', 'completed')->count();
+
+        $ongoingTasks = Task::where('status', 'ongoing')->count();
+
+        $pastDueTasks = Task::whereNotNull('due_date')
+            ->where('due_date', '<', $now)
+            ->where('status', '!=', 'completed')
+            ->count();
 
         return Inertia::render('Tasks/Index', [
             'tasks' => $tasks,
+            'stats' => [
+                'total'     => $totalTasks,
+                'completed' => $completedTasks,
+                'ongoing'   => $ongoingTasks,
+                'past_due'  => $pastDueTasks,
+            ],
         ]);
     }
+
+
 
     /**
      * Show the form for creating a new resource.
@@ -67,10 +89,35 @@ class TaskController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
-        //
+        try {
+            $task = Task::find($id);
+
+            if (!$task) {
+                return back()->with('error', 'Task not found.');
+            }
+
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'details' => 'nullable|string',
+                'priority' => 'required|in:low,medium,high',
+                'status' => 'required|in:ongoing,completed',
+                'space' => 'required|in:work,fitness,personal',
+                'due_date' => 'nullable|date',
+                'tags' => 'array',
+                'tags.*' => 'string|max:50',
+            ]);
+
+            $task->update($validated);
+
+            return back()->with('success', 'Task updated successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'An unexpected error occurred while updating the task.');
+        }
     }
+
+
 
     /**
      * Remove the specified resource from storage.
@@ -81,7 +128,6 @@ class TaskController extends Controller
             $task = Task::find($id);
 
             if (!$task) {
-                // Task not found → send an error flash
                 return back()->with('error', 'Task not found.');
             }
 
