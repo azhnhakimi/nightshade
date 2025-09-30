@@ -13,7 +13,13 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutDashboard, SquareCheck } from 'lucide-react';
+import {
+    BookOpen,
+    Folder,
+    LayoutDashboard,
+    SquareCheck,
+    StickyNote,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -26,6 +32,11 @@ const mainNavItems: NavItem[] = [
         title: 'Tasks',
         href: '/tasks',
         icon: SquareCheck,
+    },
+    {
+        title: 'Notes',
+        href: '/notes',
+        icon: StickyNote,
     },
 ];
 

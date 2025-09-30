@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+use App\Http\Controllers\NoteController;
 use App\Http\Controllers\TaskController;
 
 Route::get('/', function () {
@@ -17,6 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 
     Route::resource('tasks', TaskController::class);
+    Route::resource('notes', NoteController::class);
 });
 
 require __DIR__.'/settings.php';
